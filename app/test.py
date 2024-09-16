@@ -1,30 +1,34 @@
-import io
+import asyncio
+from langchain.schema import HumanMessage
+from services.base import AsyncCallbackTextHandler  # Điều chỉnh đường dẫn nếu cần
+from services.llm import LLM  # Điều chỉnh đường dẫn đến file chứa lớp LLM
 
-# Import các lớp và phương thức cần thiết từ các file của bạn
-from services.stt import Whisper  # Điều chỉnh đường dẫn đến file chứa lớp Whisper
+async def test_achat():
+    llm = LLM()
 
-async def test_whisper():
-    # Khởi tạo đối tượng Whisper
-    whisper = Whisper(use="api")  # Hoặc "remote" nếu bạn sử dụng dịch vụ từ xa
+    # Khởi tạo các callback giả lập
+    async def on_new_token(token: str):
+        print(f"New token: {token}")
+
+    async def on_llm_end(text: str):
+        print(f"LLM End: {text}")
+
+    # Tạo đối tượng callback
+    callback = AsyncCallbackTextHandler(on_new_token=on_new_token, token_buffer=[], on_llm_end=on_llm_end)
     
-    # Tạo dữ liệu âm thanh giả lập (thay thế với dữ liệu âm thanh thực tế nếu có)
-    with open("app/output_audio.wav", "rb") as f:
-        audio_bytes = io.BytesIO(f.read())
-    # TODO: Thêm dữ liệu âm thanh vào audio_bytes
-    
-    # Gọi phương thức transcribe
-    platform = "web"  # Hoặc "twilio" hoặc bất kỳ nền tảng nào bạn đang sử dụng
-    result = whisper.transcribe(
-        audio_bytes=audio_bytes,
-        platform=platform,
-        prompt="",
-        language="en-US"
+    # Tạo history và user_input
+    history = [HumanMessage(content="Hello")]
+    user_input = "How are you?"
+
+    # Gọi phương thức achat và lấy phản hồi
+    response = await llm.achat(
+        history=history,
+        user_input=user_input,
+        callback=callback,
     )
-    
-    # In kết quả
-    print("Transcription result:", result)
+
+    print(f"Final response: {response}")
 
 # Chạy script
 if __name__ == "__main__":
-    import asyncio
-    asyncio.run(test_whisper())
+    asyncio.run(test_achat())

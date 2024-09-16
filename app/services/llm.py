@@ -1,4 +1,6 @@
 import openai
+import os
+import dotenv
 from typing import Optional
 from langchain.chat_models import ChatOpenAI
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
@@ -6,10 +8,12 @@ from langchain.schema import BaseMessage, HumanMessage
 from logger import get_logger
 from utils import timed
 from services.base import AsyncCallbackTextHandler, AsyncCallbackAudioHandler
+
+dotenv.load_dotenv()
 logger = get_logger(__name__)
 class LLM:
     def __init__(self):
-        self.chat = ChatOpenAI(model="gpt-3.5-turbo", temperature=0.5, streaming=True)
+        self.chat = ChatOpenAI(model="gpt-3.5-turbo", temperature=0.5, streaming=True, openai_api_key=os.getenv("OPENAI_API_KEY"))
         self.config = {"model": "gpt-3.5-turbo", "temperature": 0.5, "streaming": True}
     def get_config(self):
         return self.config

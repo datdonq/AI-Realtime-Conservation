@@ -37,6 +37,7 @@ class Character:
 
 @dataclass
 class ConversationHistory:
+    system_prompt: str = ""
     user: list[str] = field(default_factory=list)
     ai: list[str] = field(default_factory=list)
 
@@ -46,20 +47,21 @@ class ConversationHistory:
             yield user_message
             yield ai_message
 
-    def load_from_db(self, session_id: str, db: Session):
-        conversations = db.query(Interaction).filter(Interaction.session_id == session_id).all()
-        for conversation in conversations:
-            self.user.append(conversation.client_message_unicode)  # type: ignore
-            self.ai.append(conversation.server_message_unicode)  # type: ignore
+    # def load_from_db(self, session_id: str, db: Session):
+    #     conversations = db.query(Interaction).filter(Interaction.session_id == session_id).all()
+    #     for conversation in conversations:
+    #         self.user.append(conversation.client_message_unicode)  # type: ignore
+    #         self.ai.append(conversation.server_message_unicode)  # type: ignore
 
 
 def build_history(conversation_history: ConversationHistory) -> list[BaseMessage]:
     history = []
     for i, message in enumerate(conversation_history):
-        if i == 0:
+        if i == 1:
             history.append(AIMessage(content=message))
-        elif i % 2 == 0:
+        elif i == 2:
             history.append(HumanMessage(content=message))
+    return history
 
 @dataclass
 class TranscriptSlice:

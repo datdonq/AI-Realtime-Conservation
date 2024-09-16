@@ -1,9 +1,9 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 import asyncio
-from app.services.llm import LLM
+from services.llm import LLM
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
-from database.connection import get_db
+# from app.database.connection import get_db
 from services import get_speech_to_text, get_text_to_speech
 from services.base import AsyncCallbackTextHandler, TextToSpeech, SpeechToText, AsyncCallbackAudioHandler
 from logger import get_logger
@@ -19,7 +19,6 @@ router = APIRouter()
 manager = ConnectionManager.get_instance()
 @router.websocket("/ws/{session_id}")
 async def websocket_endpoint(websocket: WebSocket, 
-                            db: Session = Depends(get_db),
                             speech_to_text=Depends(get_speech_to_text),
                             default_text_to_speech=Depends(get_text_to_speech),
                              ):
@@ -28,7 +27,6 @@ async def websocket_endpoint(websocket: WebSocket,
         main_task = asyncio.create_task(
             handle_receive(
                 websocket=websocket,
-                db=db,
                 llm=LLM(),
                 speech_to_text=speech_to_text,
                 default_text_to_speech=default_text_to_speech,
@@ -43,7 +41,6 @@ async def websocket_endpoint(websocket: WebSocket,
 
 async def handle_receive(
     websocket: WebSocket,
-    db: Session,
     llm: LLM,
     speech_to_text: SpeechToText,
     default_text_to_speech: TextToSpeech,
@@ -52,12 +49,6 @@ async def handle_receive(
     try:
         conversation_history = ConversationHistory()
         data = await websocket.receive()
-        # # 0. Receive client platform info (web, mobile, terminal)
-        # if not platform:
-        #     data = await websocket.receive()
-        #     if data["type"] != "websocket.receive":
-        #         raise WebSocketDisconnect(reason="disconnected")
-        #     platform = data["text"]
 
         text_to_speech = default_text_to_speech
 
@@ -69,6 +60,7 @@ async def handle_receive(
         # Chào User
         greeting_text = "Hi, my friend, what brings you here today?"
         await manager.send_message(message=greeting_text, websocket=websocket)
+        conversation_history.system_prompt = greeting_text
         tts_task = asyncio.create_task(
             text_to_speech.stream(
                 text=greeting_text,
@@ -103,8 +95,6 @@ async def handle_receive(
 
         speech_recognition_interim = False
         current_speech = ""
-
-        audio_cache: list[Transcript] = []
         speaker_audio_samples = {}
 
         while True:
@@ -160,25 +150,12 @@ async def handle_receive(
                 message_id = str(uuid.uuid4().hex)[:16]
 
                 async def text_mode_tts_task_done_call_back(response):
+                    # Update conversation history
                     # Send response to client, indicates the response is done
                     await manager.send_message(message=f"[end={message_id}]\n", websocket=websocket)
-                    # Update conversation history
                     conversation_history.user.append(msg_data)
                     conversation_history.ai.append(response)
                     token_buffer.clear()
-                    # Persist interaction in the database
-                    tools = []
-                    interaction = Interaction(
-                        client_message_unicode=msg_data,
-                        server_message_unicode=response,
-                        action_type="text",
-                        character_id="en-US-ChristopherNeural",
-                        tools=",".join(tools),
-                        language=language,
-                        message_id=message_id,
-                        llm_config=llm.get_config(),
-                    )
-                    await asyncio.to_thread(interaction.save, db)
 
                 tts_task = asyncio.create_task(
                     llm.achat(
@@ -186,9 +163,6 @@ async def handle_receive(
                         user_input=msg_data,
                         callback=AsyncCallbackTextHandler(
                             on_new_token, token_buffer, text_mode_tts_task_done_call_back
-                        ),
-                        audioCallback=AsyncCallbackAudioHandler(
-                            text_to_speech, websocket, tts_event, "en-US-ChristopherNeural", language
                         ),
                         metadata={"message_id": message_id},
                     )
@@ -262,19 +236,19 @@ async def handle_receive(
                     conversation_history.ai.append(response)
                     token_buffer.clear()
                     # Persist interaction in the database
-                    tools = []
-                    interaction = Interaction(
-                        client_message_unicode=transcript,
-                        server_message_unicode=response,
-                        platform="web",
-                        action_type="audio",
-                        character_id="en-US-ChristopherNeural",
-                        tools=",".join(tools),
-                        language=language,
-                        message_id=message_id,
-                        llm_config=llm.get_config(),
-                    )
-                    await asyncio.to_thread(interaction.save, db)
+                    # tools = []
+                    # interaction = Interaction(
+                    #     client_message_unicode=transcript,
+                    #     server_message_unicode=response,
+                    #     platform="web",
+                    #     action_type="audio",
+                    #     character_id="en-US-ChristopherNeural",
+                    #     tools=",".join(tools),
+                    #     language=language,
+                    #     message_id=message_id,
+                    #     llm_config=llm.get_config(),
+                    # )
+                    # await asyncio.to_thread(interaction.save, db)
 
                 # 5. Send message to LLM
                 tts_task = asyncio.create_task(
@@ -286,9 +260,7 @@ async def handle_receive(
                         ),
                         audioCallback=AsyncCallbackAudioHandler(
                             text_to_speech, websocket, tts_event, "en-US-ChristopherNeural", language
-                        )
-                        if not journal_mode
-                        else None,
+                        ),
                         metadata={"message_id": message_id},
                     )
                 )
