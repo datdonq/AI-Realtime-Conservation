@@ -11,8 +11,9 @@ ws.binaryType = 'arraybuffer'; // Để nhận dữ liệu nhị phân từ serv
 
 ws.onopen = () => {
   console.log('Đã kết nối tới server');
+  sendMessage("hi")
 };
-
+// ws.send(''); // Gửi tin nhắn bắt đầu kết nối
 // Khai báo biến để tích lũy phản hồi từ AI
 let aiMessageBuffer = '';
 let currentMessageElement = null; // Giữ phần tử hiện tại để nối thêm nội dung
@@ -30,7 +31,7 @@ ws.onmessage = (event) => {
         aiMessageBuffer = ''; // Xóa bộ đệm sau khi hiển thị
       } else if (message.startsWith('[+]You said')) {
         // Phản hồi từ người dùng
-        addMessage(`You: ${message.substring(12)}`);
+        addMessage(`${message.substring(12)}`);
 
         currentMessageElement = null; // Đặt lại phần tử
       } else if (message.startsWith('[end]')) {
@@ -58,7 +59,6 @@ function addWordToQueue(word) {
   }
 }
 
-// Hàm xử lý hàng đợi từ
 function processWordQueue() {
   if (wordQueue.length === 0) {
     isTyping = false; // Không có từ nào để gõ
@@ -76,31 +76,39 @@ function processWordQueue() {
 }
 
 // Hàm hiệu ứng gõ từng từ
-function addMessageTypingEffect(message, delay = 10, callback) {
-  if (!currentMessageElement) {
-    // Tạo phần tử mới nếu chưa có
-    currentMessageElement = document.createElement('div');
-    currentMessageElement.textContent = 'AI: '; // Bắt đầu với nhãn "AI: "
-    messagesDiv.appendChild(currentMessageElement);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight; // Tự động cuộn xuống khi có tin nhắn mới
-  }
-
+// Hàm hiển thị tin nhắn với hiệu ứng gõ chữ (tin nhắn từ AI)
+// Hàm hiển thị tin nhắn với hiệu ứng gõ chữ (tin nhắn từ AI)
+function addMessageTypingEffect(message, delay = 100, callback) {
   let index = 0;
 
+  // Nếu chưa có phần tử hiện tại thì tạo mới, nếu đã có thì tiếp tục nối vào phần tử hiện tại
+  if (!currentMessageElement) {
+    currentMessageElement = document.createElement('div');
+    currentMessageElement.classList.add('message', 'agent'); // Phân biệt tin nhắn từ AI với lớp 'agent'
+    currentMessageElement.textContent = ''; // Nội dung ban đầu
+    messagesDiv.appendChild(currentMessageElement); // Thêm vào div #messages
+  }
+
+  // Cuộn xuống cuối khung chat
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+  // Hàm gõ từng ký tự
   function typeCharacter() {
     if (index < message.length) {
-      currentMessageElement.textContent += message.charAt(index);
+      currentMessageElement.textContent += message.charAt(index); // Nối từng ký tự vào tin nhắn hiện tại
       index++;
-      messagesDiv.scrollTop = messagesDiv.scrollHeight; // Tự động cuộn xuống theo từng ký tự
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
       setTimeout(typeCharacter, delay); // Điều chỉnh thời gian giữa các ký tự
-    } else if (callback) {
-      callback(); // Gọi callback sau khi gõ xong từ
+    } else {
+      if (callback) callback(); // Gọi callback khi hoàn thành
     }
   }
 
-  // Bắt đầu hiệu ứng gõ từng ký tự
+  // Bắt đầu gõ ký tự
   typeCharacter();
 }
+
+
 // Reset hàng đợi từ và dừng hiệu ứng gõ
 function resetWordQueue() {
   wordQueue = []; // Xóa toàn bộ từ trong hàng đợi
@@ -109,30 +117,43 @@ function resetWordQueue() {
     currentMessageElement = null; // Đặt lại phần tử hiện tại của AI
   }
 }
-  // Hàm hiển thị tin nhắn thông thường (không hiệu ứng gõ)
-  function addMessage(message) {
-    const messageElement = document.createElement('div');
-    messageElement.textContent = message;
-    messagesDiv.appendChild(messageElement);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+// Hàm hiển thị tin nhắn thông thường (không hiệu ứng gõ)
+function addMessage(message) {
+  const messageElement = document.createElement('div');
+  messageElement.classList.add('message', 'you'); // Phân biệt tin nhắn từ người dùng với lớp 'you'
+  messageElement.textContent = `${message}`; // Nội dung tin nhắn từ người dùng
+  currentMessageElement = null; // Đặt lại phần tử hiển thị của AI
+  document.getElementById('messages').appendChild(messageElement); // Thêm vào div #messages
+  document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight; // Cuộn xuống cuối
+}
+
+// Gửi tin nhắn văn bản bằng nút send hoặc phím Enter
+function sendMessage() {
+  const message = inputField.value.trim();
+  if (message) {
+    addMessage(`${message}`);
     currentMessageElement = null; // Đặt lại phần tử hiển thị của AI
     
     resetWordQueue(); // Reset hàng đợi khi người dùng gửi tin nhắn mới
-  }
-
-// Gửi tin nhắn văn bản
-sendBtn.addEventListener('click', () => {
-    const message = inputField.value.trim();
-    if (message) {
-      addMessage(`You: ${message}`);
-      currentMessageElement = null; // Đặt lại phần tử hiển thị của AI
     
-      resetWordQueue(); // Reset hàng đợi khi người dùng gửi tin nhắn mới
-      clearAudioQueue(); // Xóa hàng đợi âm thanh khi gửi tin nhắn mới
-      ws.send(message);
-      inputField.value = '';
-    }
-  });
+    ws.send(message); // Gửi tin nhắn đến WebSocket server
+    inputField.value = ''; // Xóa nội dung trong trường nhập liệu
+  }
+}
+
+
+// Xử lý khi nhấn nút gửi
+sendBtn.addEventListener('click', () => {
+  sendMessage(); // Gọi hàm gửi tin nhắn
+});
+
+// Xử lý khi nhấn phím Enter
+inputField.addEventListener('keypress', (event) => {
+  if (event.key === 'Enter') {
+    event.preventDefault(); // Ngăn chặn hành vi mặc định của phím Enter
+    sendMessage(); // Gọi hàm gửi tin nhắn
+  }
+});
 // Hàng đợi âm thanh và biến kiểm soát
 let audioQueue = [];
 let isPlaying = false;

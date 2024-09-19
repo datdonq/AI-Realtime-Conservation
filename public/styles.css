@@ -1,0 +1,93 @@
+/* Căn giữa khung chat trên màn hình */
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+  background-color: #1f1f2e;
+  font-family: 'Roboto', sans-serif;
+}
+
+/* Khung chat chính */
+.chat-container {
+  width: 800px; /* Chiều rộng khung chat */
+  height: 900px; /* Chiều cao khung chat */
+  background-color: #2b2b3c;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Khung tin nhắn của người dùng */
+.message.you {
+  background-color: #4267f5;  /* Màu nền của tin nhắn người dùng */
+  color: #fff;  /* Màu chữ của tin nhắn người dùng */
+  padding: 10px 15px;  /* Khoảng cách giữa nội dung và viền khung tin nhắn */
+  border-radius: 10px;  /* Bo tròn các góc */
+  margin-bottom: 10px;  /* Khoảng cách giữa các tin nhắn */
+  max-width: 70%;  /* Độ rộng tối đa của khung tin nhắn */
+  align-self: flex-end;  /* Căn khung tin nhắn về bên phải */
+  text-align: right;  /* Căn nội dung bên trong khung về bên phải */
+  word-wrap: break-word;  /* Tự động xuống dòng khi văn bản dài */
+}
+
+/* Khung tin nhắn của AI */
+.message.agent {
+  background-color: #50506e;  /* Màu nền của tin nhắn AI */
+  color: #fff;
+  padding: 10px 15px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  max-width: 70%;
+  align-self: flex-start;  /* Căn khung tin nhắn về bên trái */
+  text-align: left;  /* Căn nội dung bên trong khung về bên trái */
+  word-wrap: break-word;  /* Tự động xuống dòng khi văn bản dài */
+}
+
+/* Khu vực hiển thị tin nhắn */
+.messages {
+  flex-grow: 1;
+  padding: 15px;
+  overflow-y: auto;
+  border-bottom: 1px solid #333;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Input và các nút gửi */
+.input-area {
+  display: flex;
+  padding: 15px;
+  background-color: #20202b;
+  align-items: center;
+}
+
+#input {
+  flex-grow: 1;
+  background-color: #2b2b3c;
+  border: none;
+  padding: 10px;
+  border-radius: 5px;
+  color: #fff;
+}
+
+#input::placeholder {
+  color: #888;
+}
+
+.send-btn, .record-btn {
+  background-color: #4267f5;
+  color: #fff;
+  border: none;
+  padding: 10px 15px;
+  margin-left: 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.record-btn {
+  background-color: #f54242;
+}
