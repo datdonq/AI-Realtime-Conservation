@@ -59,7 +59,7 @@ async def handle_receive(
 
         # Chào User
         greeting_text = "Hi, my friend, what brings you here today?"
-        await manager.send_message(message=greeting_text, websocket=websocket)
+        await manager.send_message(message= "[start]" + greeting_text, websocket=websocket)
         conversation_history.system_prompt = greeting_text
         tts_task = asyncio.create_task(
             text_to_speech.stream(
@@ -74,7 +74,7 @@ async def handle_receive(
         )
         tts_task.add_done_callback(task_done_callback)
         # Send end of the greeting so the client knows when to start listening
-        await manager.send_message(message="[end]\n", websocket=websocket)
+        await manager.send_message(message="[end start]\n", websocket=websocket)
 
         async def on_new_token(token):
             return await manager.send_message(message=token, websocket=websocket)
@@ -233,25 +233,11 @@ async def handle_receive(
 
                 async def audio_mode_tts_task_done_call_back(response):
                     # Send response to client, [=] indicates the response is done
-                    await manager.send_message(message="[=]", websocket=websocket)
+                    await manager.send_message(message=f"[end={response}]\n", websocket=websocket)
                     # Update conversation history
                     conversation_history.user.append(transcript)
                     conversation_history.ai.append(response)
                     token_buffer.clear()
-                    # Persist interaction in the database
-                    # tools = []
-                    # interaction = Interaction(
-                    #     client_message_unicode=transcript,
-                    #     server_message_unicode=response,
-                    #     platform="web",
-                    #     action_type="audio",
-                    #     character_id="en-US-ChristopherNeural",
-                    #     tools=",".join(tools),
-                    #     language=language,
-                    #     message_id=message_id,
-                    #     llm_config=llm.get_config(),
-                    # )
-                    # await asyncio.to_thread(interaction.save, db)
 
                 # 5. Send message to LLM
                 tts_task = asyncio.create_task(
