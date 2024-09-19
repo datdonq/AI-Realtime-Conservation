@@ -1,23 +1,31 @@
-<!-- public/index.html -->
 <!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Trò chuyện với AI</title>
-  <style>
-    /* Styles cơ bản cho giao diện chat */
-    body { font-family: Arial, sans-serif; }
-    #messages { height: 300px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; }
-    #input { width: 80%; }
-    #sendBtn, #recordBtn { width: 10%; }
-  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+
 </head>
 <body>
-  <h1>Trò chuyện với AI</h1>
-  <div id="messages"></div>
-  <input id="input" type="text" placeholder="Nhập tin nhắn..." />
-  <button id="sendBtn">Gửi</button>
-  <button id="recordBtn">🎤</button>
+  <div class="chat-container">
+    <div class="header">
+      <div class="logo">RealChar</div>
+      <div class="mode-switch">
+        <span class="active">Text mode</span>
+        <span>Hands-free mode</span>
+      </div>
+    </div>
+
+    <div id="messages" class="messages"></div>
+
+    <div class="input-area">
+      <input id="input" type="text" placeholder="Your turn" />
+      <button id="sendBtn" class="send-btn">➤</button>
+      <button id="recordBtn" class="record-btn">🎤</button>
+    </div>
+  </div>
 
   <script src="script.js"></script>
 </body>

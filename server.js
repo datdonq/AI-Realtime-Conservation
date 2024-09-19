@@ -1,14 +1,15 @@
-// server.js
 const express = require('express');
+const app = express();
 const path = require('path');
 
-const app = express();
-
-// Phục vụ các tệp tĩnh trong thư mục 'public'
+// Cấu hình Express để phục vụ file tĩnh từ thư mục 'public'
 app.use(express.static(path.join(__dirname, 'public')));
 
-const PORT = process.env.PORT || 3000;
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Frontend server is running on port ${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });
