@@ -8,6 +8,9 @@ from faster_whisper import WhisperModel
 from pydub import AudioSegment
 from logger import get_logger
 from utils import Singleton, timed
+import dotenv
+
+dotenv.load_dotenv()
 
 logger = get_logger(__name__)
 WHISPER_LANGUAGE_CODE_MAPPING = {

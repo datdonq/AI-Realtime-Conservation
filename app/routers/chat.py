@@ -152,7 +152,7 @@ async def handle_receive(
                 async def text_mode_tts_task_done_call_back(response):
                     # Update conversation history
                     # Send response to client, indicates the response is done
-                    await manager.send_message(message=f"[end={message_id}]\n", websocket=websocket)
+                    await manager.send_message(message=f"[end={response}]\n", websocket=websocket)
                     conversation_history.user.append(msg_data)
                     conversation_history.ai.append(response)
                     token_buffer.clear()
@@ -163,6 +163,9 @@ async def handle_receive(
                         user_input=msg_data,
                         callback=AsyncCallbackTextHandler(
                             on_new_token, token_buffer, text_mode_tts_task_done_call_back
+                        ),
+                        audioCallback=AsyncCallbackAudioHandler(
+                            text_to_speech, websocket, tts_event, "en-US-ChristopherNeural", language
                         ),
                         metadata={"message_id": message_id},
                     )
