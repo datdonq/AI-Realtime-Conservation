@@ -56,11 +56,17 @@ class ConversationHistory:
 
 def build_history(conversation_history: ConversationHistory) -> list[BaseMessage]:
     history = []
-    for i, message in enumerate(conversation_history):
-        if i == 1:
-            history.append(AIMessage(content=message))
-        elif i == 2:
-            history.append(HumanMessage(content=message))
+    user_messages = conversation_history.user
+    ai_messages = conversation_history.ai
+    
+    for i in range(len(user_messages)):
+        # Thêm tin nhắn của người dùng vào lịch sử
+        history.append(HumanMessage(content=user_messages[i]))
+
+        # Nếu có câu trả lời từ AI tương ứng, thêm vào lịch sử
+        if i < len(ai_messages):
+            history.append(AIMessage(content=ai_messages[i]))
+
     return history
 
 @dataclass

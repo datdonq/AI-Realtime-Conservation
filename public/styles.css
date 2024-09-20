@@ -5,7 +5,7 @@ body {
   align-items: center;
   height: 100vh;
   margin: 0;
-  background-color: #1f1f2e;
+  background-color: #fff;
   font-family: 'Roboto', sans-serif;
 }
 
@@ -63,26 +63,31 @@ body {
   padding: 15px;
   background-color: #20202b;
   align-items: center;
+  justify-content: space-between; /* Căn đều các phần tử */
 }
 
 #input {
-  flex-grow: 1;
+  flex-grow: 2; /* Để khung input chiếm nhiều không gian hơn */
   background-color: #2b2b3c;
   border: none;
-  padding: 10px;
+  padding: 15px;
+  font-size: 18px;
   border-radius: 5px;
   color: #fff;
 }
 
 #input::placeholder {
   color: #888;
+  font-size: 18px;
 }
 
 .send-btn, .record-btn {
+  flex-grow: 0.5; /* Nút sẽ chiếm ít không gian hơn so với khung input */
   background-color: #4267f5;
   color: #fff;
   border: none;
-  padding: 10px 15px;
+  padding: 15px;
+  font-size: 20px;
   margin-left: 10px;
   border-radius: 5px;
   cursor: pointer;
@@ -90,4 +95,17 @@ body {
 
 .record-btn {
   background-color: #f54242;
+}
+
+
+/* Tiêu đề của ứng dụng */
+.header-title {
+  text-align: center;
+  color: #ffffff; /* Màu chữ trắng */
+  font-size: 36px; /* Kích thước chữ lớn */
+  font-weight: 700; /* Đậm chữ */
+  padding: 20px 0; /* Khoảng cách trên dưới cho tiêu đề */
+  background-color: #4267f5; /* Màu nền tiêu đề */
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5); /* Bóng chữ để tiêu đề nổi bật hơn */
+  margin: 0;
 }

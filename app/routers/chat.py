@@ -153,10 +153,11 @@ async def handle_receive(
                     async def text_mode_tts_task_done_call_back(response):
                         # Update conversation history
                         # Send response to client, indicates the response is done
-                        await manager.send_message(message=f"[end={response}]\n", websocket=websocket)
                         conversation_history.user.append(msg_data)
                         conversation_history.ai.append(response)
                         token_buffer.clear()
+                        await manager.send_message(message=f"[end={response}]\n", websocket=websocket)
+              
 
                     tts_task = asyncio.create_task(
                         llm.achat(
