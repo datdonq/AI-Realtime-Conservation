@@ -12,7 +12,7 @@ body {
 /* Khung chat chính */
 .chat-container {
   width: 800px; /* Chiều rộng khung chat */
-  height: 900px; /* Chiều cao khung chat */
+  height: 700px; /* Chiều cao khung chat */
   background-color: #2b2b3c;
   border-radius: 10px;
   overflow: hidden;

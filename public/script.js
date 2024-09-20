@@ -6,12 +6,15 @@ const recordBtn = document.getElementById('recordBtn');
 
 // Kết nối tới WebSocket server
 const ws = new WebSocket('ws://localhost:8592/ws/22'); // Thay 'your_session_id' bằng ID phiên của bạn nếu cần
-
+// Gửi tin nhắn ping để giữ cho kết nối WebSocket sống
+let pingInterval;
 ws.binaryType = 'arraybuffer'; // Để nhận dữ liệu nhị phân từ server
 
 ws.onopen = () => {
   console.log('Đã kết nối tới server');
-  sendMessage("hi")
+  pingInterval = setInterval(() => {
+    ws.send('ping'); // Gửi tin nhắn ping đến server
+  }, 30000); // 30 giây (có thể thay đổi nếu cần)
 };
 // ws.send(''); // Gửi tin nhắn bắt đầu kết nối
 // Khai báo biến để tích lũy phản hồi từ AI
@@ -128,6 +131,7 @@ function addMessage(message) {
 }
 
 // Gửi tin nhắn văn bản bằng nút send hoặc phím Enter
+// Gửi tin nhắn văn bản bằng nút send hoặc phím Enter
 function sendMessage() {
   const message = inputField.value.trim();
   if (message) {
@@ -135,7 +139,11 @@ function sendMessage() {
     currentMessageElement = null; // Đặt lại phần tử hiển thị của AI
     
     resetWordQueue(); // Reset hàng đợi khi người dùng gửi tin nhắn mới
-    
+
+    if (isPlaying) {
+      clearAudioQueue(); // Dừng âm thanh đang phát nếu có
+    }
+
     ws.send(message); // Gửi tin nhắn đến WebSocket server
     inputField.value = ''; // Xóa nội dung trong trường nhập liệu
   }
@@ -212,6 +220,11 @@ let mediaRecorder;
 let audioChunks = [];
 
 recordBtn.addEventListener('click', async () => {
+  // Dừng phát âm thanh khi bắt đầu ghi âm
+  if (isPlaying) {
+    clearAudioQueue(); // Dừng âm thanh đang phát và xóa hàng đợi
+  }
+
   if (isRecording) {
     mediaRecorder.stop();
     recordBtn.textContent = '🎤';
@@ -248,4 +261,15 @@ function sendAudio(audioBlob) {
   audioBlob.arrayBuffer().then((arrayBuffer) => {
     ws.send(arrayBuffer);
   });
+}
+
+// Xóa hàng đợi âm thanh và dừng âm thanh đang phát
+function clearAudioQueue() {
+  audioQueue = [];
+  if (currentAudio) {
+    currentAudio.pause(); // Dừng âm thanh đang phát
+    currentAudio.currentTime = 0; // Đặt lại thời gian phát về 0
+    currentAudio = null;
+  }
+  isPlaying = false;
 }

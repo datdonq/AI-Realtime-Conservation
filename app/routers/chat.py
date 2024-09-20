@@ -109,70 +109,71 @@ async def handle_receive(
             if "text" in data:
                 timer.start("LLM First Token")
                 msg_data = data["text"]
-                # Handle client side commands
-                if msg_data.startswith("[!"):
-                    command_end = msg_data.find("]")
-                    command = msg_data[2:command_end]
-                    command_content = msg_data[command_end + 1 :]
-                    if command == "JOURNAL_MODE":
-                        journal_mode = command_content == "true"
-                    elif command == "ADD_SPEAKER":
-                        speaker_audio_samples[command_content] = None
-                    elif command == "DELETE_SPEAKER":
-                        if command_content in speaker_audio_samples:
-                            del speaker_audio_samples[command_content]
-                            logger.info(f"Deleted speaker: {command_content}")
-                    continue
-
-                # 1. Whether client will send speech interim audio clip in the next message.
-                if msg_data.startswith("[&Speech]"):
-                    speech_recognition_interim = True
-                    # stop the previous audio stream, if new transcript is received
-                    await stop_audio()
-                    continue
-
-                # 2. If client finished speech, use the sentence as input.
-                if msg_data.startswith("[SpeechFinished]"):
-                    msg_data = current_speech
-                    logger.info(f"Full transcript: {current_speech}")
-                    # Stop recognizing next audio as interim.
-                    speech_recognition_interim = False
-                    # Filter noises
-                    if not current_speech:
+                if msg_data != "ping":
+                    # Handle client side commands
+                    if msg_data.startswith("[!"):
+                        command_end = msg_data.find("]")
+                        command = msg_data[2:command_end]
+                        command_content = msg_data[command_end + 1 :]
+                        if command == "JOURNAL_MODE":
+                            journal_mode = command_content == "true"
+                        elif command == "ADD_SPEAKER":
+                            speaker_audio_samples[command_content] = None
+                        elif command == "DELETE_SPEAKER":
+                            if command_content in speaker_audio_samples:
+                                del speaker_audio_samples[command_content]
+                                logger.info(f"Deleted speaker: {command_content}")
                         continue
 
-                    await manager.send_message(
-                        message=f"[+]You said: {current_speech}", websocket=websocket
+                    # 1. Whether client will send speech interim audio clip in the next message.
+                    if msg_data.startswith("[&Speech]"):
+                        speech_recognition_interim = True
+                        # stop the previous audio stream, if new transcript is received
+                        await stop_audio()
+                        continue
+
+                    # 2. If client finished speech, use the sentence as input.
+                    if msg_data.startswith("[SpeechFinished]"):
+                        msg_data = current_speech
+                        logger.info(f"Full transcript: {current_speech}")
+                        # Stop recognizing next audio as interim.
+                        speech_recognition_interim = False
+                        # Filter noises
+                        if not current_speech:
+                            continue
+
+                        await manager.send_message(
+                            message=f"[+]You said: {current_speech}", websocket=websocket
+                        )
+                        current_speech = ""
+
+                    # 3. Send message to LLM
+                    message_id = str(uuid.uuid4().hex)[:16]
+
+                    async def text_mode_tts_task_done_call_back(response):
+                        # Update conversation history
+                        # Send response to client, indicates the response is done
+                        await manager.send_message(message=f"[end={response}]\n", websocket=websocket)
+                        conversation_history.user.append(msg_data)
+                        conversation_history.ai.append(response)
+                        token_buffer.clear()
+
+                    tts_task = asyncio.create_task(
+                        llm.achat(
+                            history=build_history(conversation_history),
+                            user_input=msg_data,
+                            callback=AsyncCallbackTextHandler(
+                                on_new_token, token_buffer, text_mode_tts_task_done_call_back
+                            ),
+                            audioCallback=AsyncCallbackAudioHandler(
+                                text_to_speech, websocket, tts_event, "en-US-ChristopherNeural", language
+                            ),
+                            metadata={"message_id": message_id},
+                        )
                     )
-                    current_speech = ""
+                    tts_task.add_done_callback(task_done_callback)
 
-                # 3. Send message to LLM
-                message_id = str(uuid.uuid4().hex)[:16]
-
-                async def text_mode_tts_task_done_call_back(response):
-                    # Update conversation history
-                    # Send response to client, indicates the response is done
-                    await manager.send_message(message=f"[end={response}]\n", websocket=websocket)
-                    conversation_history.user.append(msg_data)
-                    conversation_history.ai.append(response)
-                    token_buffer.clear()
-
-                tts_task = asyncio.create_task(
-                    llm.achat(
-                        history=build_history(conversation_history),
-                        user_input=msg_data,
-                        callback=AsyncCallbackTextHandler(
-                            on_new_token, token_buffer, text_mode_tts_task_done_call_back
-                        ),
-                        audioCallback=AsyncCallbackAudioHandler(
-                            text_to_speech, websocket, tts_event, "en-US-ChristopherNeural", language
-                        ),
-                        metadata={"message_id": message_id},
-                    )
-                )
-                tts_task.add_done_callback(task_done_callback)
-
-                # 5. Persist interaction in the database
+                    # 5. Persist interaction in the database
 
             # handle binary message(audio)
             elif "bytes" in data:
